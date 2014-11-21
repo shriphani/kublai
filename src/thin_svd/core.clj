@@ -62,24 +62,22 @@
              info)
     (let [w (array
              (vec workd))]
-      (println (count w))
+
       (while (not= 99 (.val ido))      
         (if-not (and (not= 1 (.val ido))
                      (not= -1 (.val ido)))
           (let [input-offset (- (aget ipntr 0) 1)
                 output-offset (- (aget ipntr 1) 1)
-                _ (println input-offset output-offset)
-                _ (println input-offset (min (+ dimension input-offset)
-                                             (dec (count w))))
+
                 x (subvector w
                              input-offset
                              (min dimension
-                                  (- (count w)
+                                  (- (-> w shape first)
                                      input-offset)))
                 y (subvector w
                              output-offset
                              (min dimension
-                                  (- (count w)
+                                  (- (-> w shape first)
                                      output-offset)))
                 
                 new-y (mul x)]
@@ -104,7 +102,8 @@
       (let [d (double-array (.val nev))
             select (boolean-array ncv)
             z (Arrays/copyOfRange v 0 (* (.val nev) dimension))]
-        (.dseupd true
+        (.dseupd arpack
+                 true
                  "A"
                  select
                  d
@@ -128,8 +127,15 @@
                  info)
 
         (let [computed (aget iparam 4)
-              eigenpairs (map-indexed
-                          (fn [i x]
-                            [x (Arrays/copyOfRange z (* i dimension) (+ dimension (* i dimension)))])
-                          (Arrays/copyOfRange d 0 computed))]
-          eigenpairs)))))
+              eigenpairs (sort-by
+                          first
+                          (map-indexed
+                           (fn [i x]
+                             [x
+                              (vec
+                               (Arrays/copyOfRange z (* i dimension) (+ dimension (* i dimension))))])
+                           (Arrays/copyOfRange d 0 computed)))
+              eigenvector-matrix (matrix (map second eigenpairs))
+              eigenvalue-matrix  (diagonal-matrix (map first eigenpairs))]
+          {:Q eigenvector-matrix
+           :A eigenvalue-matrix})))))
