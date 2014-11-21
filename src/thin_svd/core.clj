@@ -3,6 +3,7 @@
   (:require [clojure.core.matrix :refer :all]
             [clojure.core.matrix.operators :refer :all])
   (:import [com.github.fommil.netlib ARPACK]
+           [java.util Arrays]
            [org.netlib.util intW doubleW]))
 
 (defn eigen-decomposition
@@ -59,5 +60,76 @@
              workl
              (count workl)
              info)
-    (let [w (vector workd)]
-      )))
+    (let [w (array
+             (vec workd))]
+      (println (count w))
+      (while (not= 99 (.val ido))      
+        (if-not (and (not= 1 (.val ido))
+                     (not= -1 (.val ido)))
+          (let [input-offset (- (aget ipntr 0) 1)
+                output-offset (- (aget ipntr 1) 1)
+                _ (println input-offset output-offset)
+                _ (println input-offset (min (+ dimension input-offset)
+                                             (dec (count w))))
+                x (subvector w
+                             input-offset
+                             (min dimension
+                                  (- (count w)
+                                     input-offset)))
+                y (subvector w
+                             output-offset
+                             (min dimension
+                                  (- (count w)
+                                     output-offset)))
+                
+                new-y (mul x)]
+            (.dsaupd arpack
+                     ido
+                     bmat
+                     dimension
+                     which
+                     (.val nev)
+                     tolW
+                     resid
+                     ncv
+                     v
+                     dimension
+                     iparam
+                     ipntr
+                     workd
+                     workl
+                     (count workl)
+                     info))))
+
+      (let [d (double-array (.val nev))
+            select (boolean-array ncv)
+            z (Arrays/copyOfRange v 0 (* (.val nev) dimension))]
+        (.dseupd true
+                 "A"
+                 select
+                 d
+                 z
+                 dimension
+                 0.0
+                 bmat
+                 dimension
+                 which
+                 nev
+                 tol
+                 resid
+                 ncv
+                 v
+                 dimension
+                 iparam
+                 ipntr
+                 workd
+                 workl
+                 (count workl)
+                 info)
+
+        (let [computed (aget iparam 4)
+              eigenpairs (map-indexed
+                          (fn [i x]
+                            [x (Arrays/copyOfRange z (* i dimension) (+ dimension (* i dimension)))])
+                          (Arrays/copyOfRange d 0 computed))]
+          eigenpairs)))))
