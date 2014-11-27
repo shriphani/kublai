@@ -6,6 +6,11 @@
            [java.util Arrays]
            [org.netlib.util intW doubleW]))
 
+(defn arpack-non-symmetric-eigen-decomposition
+  [mul dimension num-evs]
+  (throw
+   (Exception. "Not Implemented Yet.")))
+
 ;; (defn arpack-non-symmetric-eigen-decomposition
 ;;   [mul dimension num-evs tol max-iterations leading-dim]
 ;;   (let [arpack (ARPACK/getInstance)

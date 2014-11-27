@@ -1,161 +1,36 @@
-(ns thin-svd.core
+(ns kublai.core
   (:refer-clojure :exclude [* - + == /])
   (:require [clojure.core.matrix :refer :all]
-            [clojure.core.matrix.operators :refer :all])
-  (:import [com.github.fommil.netlib ARPACK]
-           [java.util Arrays]
-           [org.netlib.util intW doubleW]))
+            [clojure.core.matrix.operators :refer :all]
+            [kublai.arpack :as arpack]))
 
-(defn arpack-symmetric-eigen-decomposition
-  "Implements a truncated symmetric eigen-decomposition
-   Args:
-    mul: multiply routine
-    dimension: dimension of the matrix
-    k: number of eigenvalues
-    tol: tolerance
-    max-iterations: number of iterations to stop after"
-  ([mul dimension num-evs]
-     (eigen-decomposition mul dimension num-evs 1e-10 8))
+(defn symmetric-eigen-decomposition
+  [M n]
+  (arpack/arpack-symmetric-eigen-decomposition #(mmul M %)
+                                               (-> M shape first)
+                                               n))
 
-  ([mul dimension num-evs tol max-iterations]
+(defn non-symmetric-eigen-decomposition
+  [M n]
+  (arpack/arpack-non-symmetric-eigen-decomposition #(mmul M %)
+                                                   (-> M shape first)
+                                                   n))
 
-     (let [arpack (ARPACK/getInstance)
+(defn eigs
+  ([M n]
+     (if (symmetric? M)
+       (eigs M n :symmetric)
+       (eigs M n :not-symmetric)))
+  ([M n option]
+     (cond (= option :symmetric)
+           (symmetric-eigen-decomposition M n)
 
-           tolW   (doubleW. tol)
-           nev    (intW. num-evs)
+           (= option :non-symmetric)
+           (non-symmetric-eigen-decomposition M n)
 
-           ncv    (min (* 2 num-evs)
-                       dimension)
-
-           bmat   "I"
-           which  "LM"
-
-           iparam (int-array 11)
-
-           _ (aset-int iparam 0 1)
-           _ (aset-int iparam 2 max-iterations)
-           _ (aset-int iparam 6 1)
-
-           ido (intW. 0)
-           info (intW. 0)
-           resid (double-array dimension)
-           v     (double-array (* dimension
-                                  ncv))
-           workd (double-array (* ncv
-                                  3))
-           workl (double-array (* ncv
-                                  (+ 8 ncv)))
-           ipntr (int-array 11)]
-       
-       (.dsaupd arpack
-                ido
-                bmat
-                dimension
-                which
-                (.val nev)
-                tolW
-                resid
-                ncv
-                v
-                dimension
-                iparam
-                ipntr
-                workd
-                workl
-                (count workl)
-                info)
-
-       (while (not= 99 (.val ido))      
-         (if-not (and (not= 1 (.val ido))
-                      (not= -1 (.val ido)))
-           (let [w (array
-                    (vec workd))
-                 input-offset (- (aget ipntr 0) 1)
-                 output-offset (- (aget ipntr 1) 1)
-
-                 x (subvector w
-                              input-offset
-                              (min dimension
-                                   (- (-> w shape first)
-                                      input-offset)))
-                 y (subvector w
-                              output-offset
-                              (min dimension
-                                   (- (-> w shape first)
-                                      output-offset)))
-                 
-                 new-y (mul x)]
-             (do (map
-                  (fn [i]
-                    (aset-double workd
-                                 i
-                                 (mget new-y
-                                       (- i output-offset))))
-                  (range output-offset
-                         (+ output-offset
-                            (-> new-y shape first))))
-                 
-                 (.dsaupd arpack
-                          ido
-                          bmat
-                          dimension
-                          which
-                          (.val nev)
-                          tolW
-                          resid
-                          ncv
-                          v
-                          dimension
-                          iparam
-                          ipntr
-                          new-workd
-                          workl
-                          (count workl)
-                          info)))
+           :else
            (throw
-            (Exception. "Fatal error encountered"))))
-
-       (let [d (double-array (.val nev))
-             select (boolean-array ncv)
-             z (Arrays/copyOfRange v 0 (* (.val nev) dimension))]
-         (.dseupd arpack
-                  true
-                  "A"
-                  select
-                  d
-                  z
-                  dimension
-                  0.0
-                  bmat
-                  dimension
-                  which
-                  nev
-                  tol
-                  resid
-                  ncv
-                  v
-                  dimension
-                  iparam
-                  ipntr
-                  workd
-                  workl
-                  (count workl)
-                  info)
-
-         (let [computed (aget iparam 4)
-               eigenpairs (reverse
-                           (sort-by
-                            first
-                            (map-indexed
-                             (fn [i x]
-                               [x
-                                (vec
-                                 (Arrays/copyOfRange z (* i dimension) (+ dimension (* i dimension))))])
-                             (Arrays/copyOfRange d 0 computed))))
-               eigenvector-matrix (matrix (map second eigenpairs))
-               eigenvalue-matrix  (diagonal-matrix (map first eigenpairs))]
-           {:Q eigenvector-matrix
-            :A eigenvalue-matrix})))))
+            (Exception. "Supported options are :symmetric and :non-symmetric")))))
 
 (defn svd
   "Args: we expect a matrix and the number
@@ -169,12 +44,8 @@
         gram-dimension (-> gram-matrix shape first)
         cov-dimension  (-> cov-matrix shape first)
         
-        {U :Q lambda :A} (eigen-decomposition #(* cov-matrix %)
-                                         cov-dimension
-                                         n)
-        {V :Q lambda2 :A} (eigen-decomposition #(* gram-matrix %)
-                                         gram-dimension
-                                         n)]
+        {U :Q lambda :A} (symmetric-eigen-decomposition cov-matrix n)
+        {V :Q lambda2 :A} (symmetric-eigen-decomposition gram-matrix n)]
     {:U U
      :V* (transpose V)
      :S (sqrt lambda)}))
