@@ -36,16 +36,17 @@
   "Args: we expect a matrix and the number
    of singular values you want to retrieve"
   [M n]
-  (let [gram-matrix (* (transpose M)
-                       M)
+  (let [gram-matrix (mmul (transpose M)
+                          M)
 
-        cov-matrix  (* M (transpose M))
+        cov-matrix  (mmul M
+                          (transpose M))
 
         gram-dimension (-> gram-matrix shape first)
         cov-dimension  (-> cov-matrix shape first)
         
         {U :Q lambda :A} (symmetric-eigen-decomposition cov-matrix n)
         {V :Q lambda2 :A} (symmetric-eigen-decomposition gram-matrix n)]
-    {:U U
-     :V* (transpose V)
+    {:U (transpose U)
+     :V* V
      :S (sqrt lambda)}))
