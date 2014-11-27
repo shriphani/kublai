@@ -6,8 +6,9 @@
            [java.util Arrays]
            [org.netlib.util intW doubleW]))
 
-(defn eigen-decomposition
-  "Args:
+(defn arpack-symmetric-eigen-decomposition
+  "Implements a truncated symmetric eigen-decomposition
+   Args:
     mul: multiply routine
     dimension: dimension of the matrix
     k: number of eigenvalues
@@ -83,39 +84,34 @@
                                    (- (-> w shape first)
                                       output-offset)))
                  
-                 new-y (mul x)
-                 _ (println x)
-                 _ (println workd)
-                 _ (println new-y)
-                 new-workd (reduce
-                            (fn [acc i]
-                              (println acc)
-                              (aset-double acc
-                                           i
-                                           (mget new-y
-                                                 (- i output-offset)))
-                              acc)
-                            workd
-                            (range output-offset
-                                   (+ output-offset
-                                      (-> new-y shape first))))]
-             (.dsaupd arpack
-                      ido
-                      bmat
-                      dimension
-                      which
-                      (.val nev)
-                      tolW
-                      resid
-                      ncv
-                      v
-                      dimension
-                      iparam
-                      ipntr
-                      new-workd
-                      workl
-                      (count workl)
-                      info))
+                 new-y (mul x)]
+             (do (map
+                  (fn [i]
+                    (aset-double workd
+                                 i
+                                 (mget new-y
+                                       (- i output-offset))))
+                  (range output-offset
+                         (+ output-offset
+                            (-> new-y shape first))))
+                 
+                 (.dsaupd arpack
+                          ido
+                          bmat
+                          dimension
+                          which
+                          (.val nev)
+                          tolW
+                          resid
+                          ncv
+                          v
+                          dimension
+                          iparam
+                          ipntr
+                          new-workd
+                          workl
+                          (count workl)
+                          info)))
            (throw
             (Exception. "Fatal error encountered"))))
 
