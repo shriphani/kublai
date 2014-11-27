@@ -172,7 +172,7 @@
     tol: tolerance
     max-iterations: number of iterations to stop after"
   ([mul dimension num-evs]
-     (eigen-decomposition mul dimension num-evs 1e-10 8))
+     (arpack-symmetric-eigen-decomposition mul dimension num-evs 1e-10 8))
 
   ([mul dimension num-evs tol max-iterations]
 
@@ -242,15 +242,16 @@
                                       output-offset)))
                  
                  new-y (mul x)]
-             (do (map
-                  (fn [i]
-                    (aset-double workd
-                                 i
-                                 (mget new-y
-                                       (- i output-offset))))
-                  (range output-offset
-                         (+ output-offset
-                            (-> new-y shape first))))
+             (do (doall
+                  (map
+                   (fn [i]
+                     (aset-double workd
+                                  i
+                                  (mget new-y
+                                        (- i output-offset))))
+                   (range output-offset
+                          (+ output-offset
+                             (-> new-y shape first)))))
                  
                  (.dsaupd arpack
                           ido
@@ -265,7 +266,7 @@
                           dimension
                           iparam
                           ipntr
-                          new-workd
+                          workd
                           workl
                           (count workl)
                           info)))
