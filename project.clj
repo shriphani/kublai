@@ -1,4 +1,4 @@
-(defproject kublai "0.9-SNAPSHOT"
+(defproject kublai "0.9"
   :description "Truncated decompositions for core.matrix"
   :url "http://github.com/shriphani/kublai"
   :license {:name "Eclipse Public License"

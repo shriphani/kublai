@@ -1,7 +1,15 @@
 # kublai
 
 A Clojure library that implements truncated matrix decompositions for
-[core.matrix](https://github.com/mikera/core.matrix) matrices.
+<code>[core.matrix](https://github.com/mikera/core.matrix)</code> matrices.
+
+Kublai uses the [ARPACK library](http://www.caam.rice.edu/software/ARPACK/) for implementing these decompositions.
+
+The library is independent of the <code>core.matrix</code> implementation used.
+
+To include it in your projects:
+
+[![Clojars Project](http://clojars.org/kublai/latest-version.svg)](http://clojars.org/kublai)
 
 ## Motivation
 
