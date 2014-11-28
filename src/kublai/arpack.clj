@@ -198,7 +198,7 @@
            resid (double-array dimension)
            v     (double-array (* dimension
                                   ncv))
-           workd (double-array (* ncv
+           workd (double-array (* dimension
                                   3))
            workl (double-array (* ncv
                                   (+ 8 ncv)))
@@ -232,16 +232,14 @@
 
                  x (subvector w
                               input-offset
-                              (min dimension
-                                   (- (-> w shape first)
-                                      input-offset)))
+                              dimension)
                  y (subvector w
                               output-offset
-                              (min dimension
-                                   (- (-> w shape first)
-                                      output-offset)))
-                 
+                              dimension)
+
                  new-y (mul x)]
+             ;; this needs to be done since the core.matrix
+             ;; implementation might not support mutable arrays
              (do (doall
                   (map
                    (fn [i]

@@ -3,6 +3,10 @@
 A Clojure library that implements truncated matrix decompositions for
 [core.matrix](https://github.com/mikera/core.matrix) matrices.
 
+## Motivation
+
+See [my blog post on the topic]()
+
 ## Usage
 
 To run a truncated symmetric-eigendecomposition:
