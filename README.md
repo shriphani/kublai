@@ -13,7 +13,7 @@ To include it in your projects:
 
 ## Motivation
 
-See [my blog post on the topic]()
+See [my blog post on the topic](http://blog.shriphani.com/2014/11/28/implementing-truncated-matrix-decompositions-for-core-matrix/)
 
 ## Usage
 
