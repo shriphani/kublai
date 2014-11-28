@@ -61,6 +61,26 @@ user> (clojure.pprint/pprint (svd M 2))
 nil
 ```
 
+The truncated SVDs perform very well on extremely large matrices. For
+example, here's a timing test:
+
+```clojure
+(let [M1 (reshape (matrix (range 500000)) [10000 50])
+        M2 (reshape (matrix (range 5000000)) [10000 500])
+        M3 (reshape (matrix (range 5000000)) [1000 5000])]
+    (time (kublai/svd M1 10))
+    (time (kublai/svd M2 10))
+    (time (kublai/svd M3 10)))
+```
+
+So for each of the matrices, we retrieve 10 singular vectors:
+
+```
+"Elapsed time: 17372.943 msecs"
+"Elapsed time: 78085.404 msecs"
+"Elapsed time: 41511.266 msecs"
+```
+
 ## License
 
 Copyright © 2014 Shriphani Palakodety
